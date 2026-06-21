@@ -3566,33 +3566,8 @@ const server = http.createServer(async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-// 自动重启：监控 APIs.js 变化，代码更新后自动重启
-const __file = __filename;
-let restartTimer = null;
-fs.watch(__file, () => {
-  if (restartTimer) return;
-  restartTimer = setTimeout(() => {
-    console.log('\n[热重载] 检测到代码变化，正在重启...');
-    server.close(() => {
-      // 先刷写所有缓冲数据
-      flushStatsBuffer().catch(() => {});
-      flushDailyStatsBuffer().catch(() => {});
-      flushMonthlyStatsBuffer().catch(() => {});
-      usageBufferDO.flush();
-      // debounce 写入 allowance
-      if (allowanceDO._saveTimer) { clearTimeout(allowanceDO._saveTimer); allowanceDO._dirty = true; }
-      const kvRaw = JSON.stringify(kvData, null, 2);
-      try { fs.writeFileSync(KV_FILE, kvRaw); } catch {}
-      // 重新启动子进程
-      const { spawn } = require('child_process');
-      const child = spawn(process.execPath, [__file], { stdio: 'inherit', env: process.env });
-      child.on('exit', (code) => process.exit(code || 0));
-    });
-  }, 500);
-});
-
 server.listen(PORT, () => {
   console.log(`APIs 本地运行: http://localhost:${PORT}`);
   console.log(`管理后台: http://localhost:${PORT}/admin`);
-  console.log(`代码监控: ${__file} (修改后自动重启)`);
+  console.log(`更新代码后手动重启: APIsNO && APIs`);
 });
