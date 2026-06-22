@@ -1,0 +1,27 @@
+{
+  "name": "apis-local-proxy",
+  "version": "1.0.0",
+  "description": "Local API proxy server adapted from Cloudflare Worker, supporting multi-account pooling, load balancing, and usage tracking",
+  "main": "APIs.js",
+  "scripts": {
+    "start": "node APIs.js",
+    "dev": "node --watch APIs.js"
+  },
+  "keywords": [
+    "api",
+    "proxy",
+    "load-balancer",
+    "openai",
+    "cloudflare-worker",
+    "multi-account"
+  ],
+  "author": "lijinzhao8",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lijinzhao8/apis-local-proxy.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
