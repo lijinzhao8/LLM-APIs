@@ -433,6 +433,11 @@ async function handleRequest(request) {
           return handleResponsesAPI(request, corsHeaders);
         }
 
+        // Image Generation API：/v1/images/generations
+        if (path === '/v1/images/generations') {
+          return handleImageGenerations(request, corsHeaders);
+        }
+
         return handleProxy(request, path, corsHeaders);
       }
 
@@ -2518,6 +2523,131 @@ async function handleProxy(request, path, corsHeaders) {
   }), { status: exhaustedByAllowance ? 503 : 502, headers: { 'Content-Type': 'application/json', ...corsHeaders, 'X-Worker-Time': String(durationMs) + 'ms' } });
 }
 
+// ===================== Image Generation API =====================
+// /v1/images/generations → 转发到支持图片生成的上游账号
+// 支持 OpenAI gpt-image-2 格式
+
+async function handleImageGenerations(request, corsHeaders) {
+  const accounts = await loadAccounts();
+  const enabledAccounts = accounts.filter(isAccountEnabled);
+  const startTime = Date.now();
+
+  if (enabledAccounts.length === 0) {
+    return new Response(JSON.stringify({
+      error: { message: 'No enabled upstream accounts.' },
+    }), { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
+
+  let body;
+  try { body = await request.json(); }
+  catch {
+    return new Response(JSON.stringify({ error: { message: 'Invalid JSON' } }), {
+      status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
+  let model = body && body.model;
+  if (typeof model !== 'string' || !model.trim()) {
+    // 默认使用 gpt-image-2
+    model = 'gpt-image-2';
+  }
+  model = model.trim();
+
+  // 找支持图片生成的账号（models 中包含 gpt-image-2 或类似图片模型）
+  const imageModels = ['gpt-image-2', 'gpt-image-1', 'dall-e-3', 'dall-e-2'];
+  let candidates = enabledAccounts.filter(acct => {
+    if (!acct.models || !Array.isArray(acct.models)) return false;
+    return acct.models.some(m => imageModels.includes(m));
+  });
+
+  // 如果没找到专门的图片账号，尝试用任何支持的账号
+  if (candidates.length === 0) {
+    candidates = enabledAccounts.filter(acct => {
+      if (!acct.models || !Array.isArray(acct.models)) return false;
+      return acct.models.some(m => m.includes('image') || m.includes('dall'));
+    });
+  }
+
+  if (candidates.length === 0) {
+    return new Response(JSON.stringify({
+      error: { message: 'No upstream account supports image generation.' },
+    }), { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
+
+  const ua = request.headers.get('User-Agent') || '';
+  const ip = request.headers.get('CF-Connecting-IP') || '';
+  let lastError = '';
+
+  // 按优先级排序
+  candidates.sort((a, b) => (a.priority || 1) - (b.priority || 1));
+
+  for (const acct of candidates) {
+    try {
+      // 构建上游请求
+      const targetUrl = buildTargetUrl(acct.base_url, '/v1/images/generations');
+      
+      // 映射模型名
+      let upstreamModel = model;
+      if (acct.model_map && acct.model_map[model]) {
+        upstreamModel = acct.model_map[model];
+      }
+
+      // 构建请求体
+      const bodyToSend = {
+        model: upstreamModel,
+        prompt: body.prompt,
+        n: body.n || 1,
+        size: body.size || '1024x1024',
+      };
+      
+      // 可选参数
+      if (body.quality) bodyToSend.quality = body.quality;
+      if (body.style) bodyToSend.style = body.style;
+      if (body.response_format) bodyToSend.response_format = body.response_format;
+      if (body.background) bodyToSend.background = body.background;
+      if (body.moderation) bodyToSend.moderation = body.moderation;
+
+      console.log(`[ImageGen] ${acct.name} → ${targetUrl} model=${upstreamModel}`);
+
+      const upstreamResp = await poolFetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + acct.api_key,
+        },
+        body: JSON.stringify(bodyToSend),
+        timeout: 300000, // 图片生成可能较慢
+      });
+
+      if (!upstreamResp.ok) {
+        const errText = await upstreamResp.text().catch(() => '');
+        lastError = '[' + acct.name + '] upstream ' + upstreamResp.status + ': ' + errText.slice(0, 200);
+        console.log(`[ImageGen] Error: ${lastError}`);
+        continue;
+      }
+
+      // 成功！返回响应
+      const responseText = await upstreamResp.text();
+      console.log(`[ImageGen] Success from ${acct.name}`);
+      
+      return new Response(responseText, {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+
+    } catch (err) {
+      lastError = '[' + acct.name + '] ' + err.message;
+      console.log(`[ImageGen] Exception: ${lastError}`);
+      continue;
+    }
+  }
+
+  // 所有账号失败
+  return new Response(JSON.stringify({
+    error: { message: 'All upstream accounts failed. Last: ' + lastError },
+  }), { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+}
+
 // 透传上游响应，流式直接透传 body，非流式兼容 json 解析失败
 async function proxyRespond(response, isStream, corsHeaders, extraHeaders) {
   extraHeaders = extraHeaders || {};
@@ -3569,5 +3699,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`APIs 本地运行: http://localhost:${PORT}`);
   console.log(`管理后台: http://localhost:${PORT}/admin`);
-  console.log(`更新代码后手动重启: APIsNO && APIs`);
+  console.log(`更新代码后关闭窗口再点桌面 opencode.bat 重启`);
 });

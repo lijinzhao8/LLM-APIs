@@ -1,25 +1,25 @@
 {
-  "name": "apis-local-proxy",
+  "name": "llm-apis",
   "version": "1.0.0",
-  "description": "Local API proxy server adapted from Cloudflare Worker, supporting multi-account pooling, load balancing, and usage tracking",
+  "description": "极度轻量化的本地大语言模型 API 代理。无需服务器，开机即用。支持多账号池化、负载均衡、用量监控。",
   "main": "APIs.js",
   "scripts": {
     "start": "node APIs.js",
     "dev": "node --watch APIs.js"
   },
   "keywords": [
-    "api",
-    "proxy",
+    "llm",
+    "api-proxy",
     "load-balancer",
-    "openai",
-    "cloudflare-worker",
-    "multi-account"
+    "openai-compatible",
+    "multi-account",
+    "local-proxy"
   ],
   "author": "lijinzhao8",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lijinzhao8/apis-local-proxy.git"
+    "url": "https://github.com/lijinzhao8/LLM-APIs.git"
   },
   "engines": {
     "node": ">=18.0.0"
