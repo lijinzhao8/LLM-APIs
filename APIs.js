@@ -530,6 +530,9 @@ function handleAdmin(request, corsHeaders) {
   h += '.bg-teal{background:#d4f5f0;color:#00695c}';
   h += '.bg-pink{background:#fce4ec;color:#880e4f}';
   h += '.tag{display:inline-block;background:#e8ecf1;padding:1px 6px;border-radius:3px;font-size:11px;margin:1px}';
+  h += '.badge-toggle{cursor:pointer;user-select:none;transition:transform .15s,box-shadow .15s;display:inline-block}';
+  h += '.badge-toggle:hover{transform:scale(1.08);box-shadow:0 2px 8px rgba(0,0,0,.15)}';
+  h += '.badge-toggle:active{transform:scale(.95)}';
   // Buttons
   h += '.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;border:none;border-radius:6px;font-size:14px;cursor:pointer;color:#fff;text-decoration:none;min-height:36px;white-space:nowrap;transition:background .2s,box-shadow .15s}';
   h += '.btn-primary{background:var(--primary)}';
@@ -779,7 +782,7 @@ function handleAdmin(request, corsHeaders) {
   h += 'var t="<table><thead><tr><th>名称</th><th>负载</th><th>余量</th><th>操作</th><th>模型</th><th>状态</th><th>映射</th><th>优先级/权重</th><th>池模式</th><th>重试次数</th><th>备注</th></tr></thead><tbody>";';
   h += 'for(var i=0;i<accounts.length;i++){';
   h += 'var a=accounts[i];';
-  h += 'var s=(a.enabled!==false)?"<span class=\\"badge bg-green\\">启用</span>":"<span class=\\"badge bg-red\\">禁用</span>";';
+  h += 'var s=(a.enabled!==false)?"<span class=\\"badge bg-green badge-toggle\\" data-toggle-enabled=\\""+a.id+"\\">启用</span>":"<span class=\\"badge bg-red badge-toggle\\" data-toggle-enabled=\\""+a.id+"\\">禁用</span>";';
   h += 'var ms="<div style=\\"display:block;max-height:76px;overflow-y:auto;padding:2px\\">";for(var j=0;j<(a.models||[]).length;j++){ms+="<div style=\\"background:#e8ecf1;padding:1px 6px;border-radius:3px;font-size:11px;white-space:nowrap;margin:1px 0\\">"+esc(a.models[j])+"</div>"}ms+="</div>"';
   h += ';';
   h += 'var mc=0;if(a.model_map){for(var mk in a.model_map){if(a.model_map.hasOwnProperty(mk))mc++}}';
@@ -809,6 +812,7 @@ function handleAdmin(request, corsHeaders) {
   h += 'el.querySelectorAll("[data-move-up]").forEach(function(b){b.addEventListener("click",function(){moveAccount(b.getAttribute("data-move-up"),-1)})});';
   h += 'el.querySelectorAll("[data-move-down]").forEach(function(b){b.addEventListener("click",function(){moveAccount(b.getAttribute("data-move-down"),1)})});';
   h += 'el.querySelectorAll("[data-ae]").forEach(function(b){b.addEventListener("click",function(){openEditAccount(b.getAttribute("data-ae"))})});';
+  h += 'el.querySelectorAll("[data-toggle-enabled]").forEach(function(b){b.addEventListener("click",function(){toggleAccountEnabled(b.getAttribute("data-toggle-enabled"))})});';
   h += '}';
 
   h += 'function esc(s){if(!s)return "";return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/\x27/g,"&#x27;")}';
@@ -961,6 +965,19 @@ h += 'if(info.quota.display_currency){var v=Math.max(0,scaleVal(rem));var cls2=v
   h += 'var d=await r.json();';
   h += 'if(d.success){toast("已删除","ok");loadAccountsList()}else{toast("删除失败","err")}';
   h += '}catch(e){toast("删除失败","err")}';
+  h += '}';
+
+  // 切换账号启用/禁用状态
+  h += 'async function toggleAccountEnabled(id){';
+  h += 'var a=null;for(var i=0;i<accounts.length;i++){if(accounts[i].id===id){a=accounts[i];break}}';
+  h += 'if(!a){toast("账号不存在","err");return}';
+  h += 'var newEnabled=a.enabled===false?true:false;';
+  h += 'try{';
+  h += 'var body={name:a.name,base_url:a.base_url,api_key:a.api_key,models:a.models||[],model_map:a.model_map||{},priority:a.priority||1,weight:a.weight||1,max_concurrency:a.max_concurrency||0,enabled:newEnabled,note:a.note||"",pool_mode:a.pool_mode===true,pool_mode_retry_count:a.pool_mode_retry_count!=null?a.pool_mode_retry_count:3,pool_retry_statuses:a.pool_retry_statuses||[401,403,429],id:id};';
+  h += 'var r=await adminFetch(base+"/admin/accounts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});';
+  h += 'var d=await r.json();';
+  h += 'if(d.success){toast(newEnabled?"已启用":"已禁用","ok");loadAccountsList()}else{toast("切换失败: "+d.error,"err")}';
+  h += '}catch(e){toast("切换失败","err")}';
   h += '}';
 
   // 测试：先弹选单再测试

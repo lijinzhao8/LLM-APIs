@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "极度轻量化的本地大语言模型 API 代理。无需服务器，开机即用。支持多账号池化、负载均衡、用量监控。",
   "main": "APIs.js",
   "scripts": {
