@@ -1,4 +1,4 @@
-﻿// APIs.js - 本地 APIs 服务器
+﻿// APIs.js - 本地 LLM-APIs 服务器
 // 从 Cloudflare Worker 适配而来，可在 Node.js 本地运行
 'use strict';
 
@@ -301,7 +301,7 @@ function normTarget(t) {
 
 
 // ============================================================
-// APIs Worker — sub2api 风格
+// LLM-APIs Worker — sub2api 风格
 // accounts = 上游账号池；本地运行，无认证
 // ============================================================
 
@@ -462,7 +462,7 @@ function handleAdmin(request, corsHeaders) {
   var h = '<!DOCTYPE html><html lang="zh-CN"><head>';
   h += '<meta charset="UTF-8">';
   h += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-  h += '<title>APIs 管理</title>';
+  h += '<title>LLM-APIs 管理</title>';
   h += '<style>';
   h += ':root{--primary:#667eea;--primary-hover:#5a6fd6;--bg:#f0f2f5;--sidebar-bg:#fff;--card-bg:#fff;--text:#333;--text-sec:#666;--border:#e5e7eb;--sidebar-w:240px}';
   h += '*{margin:0;padding:0;box-sizing:border-box}';
@@ -621,14 +621,14 @@ function handleAdmin(request, corsHeaders) {
   h += '<aside class="sidebar" id="sidebar">';
   h += '<div class="sidebar-brand">';
   h += '<div class="sidebar-avatar" id="sidebarAvatar" title="点击设置头像"><span class="avatar-placeholder">A</span></div>';
-  h += 'APIs</div>';
+  h += 'LLM-APIs</div>';
   h += '<div class="sidebar-nav">';
   h += '<div class="sidebar-nav-group">导航</div>';
   h += '<div class="sidebar-item active" data-page="page-accounts" data-hash="accounts" data-title="\u8D26\u53F7\u7BA1\u7406" role="tab" tabindex="0" aria-selected="true"><span class="nav-icon">\uD83D\uDCCB</span>\u8D26\u53F7\u7BA1\u7406</div>';
   h += '<div class="sidebar-item" data-page="page-usage" data-hash="usage" data-title="\u4F7F\u7528\u8BB0\u5F55" role="tab" tabindex="-1" aria-selected="false"><span class="nav-icon">\uD83D\uDCCA</span>\u4F7F\u7528\u8BB0\u5F55</div>';
   h += '<div class="sidebar-item" data-page="page-cumulative" data-hash="cumulative" data-title="\u7D2F\u8BA1\u7EDF\u8BA1" role="tab" tabindex="-1" aria-selected="false"><span class="nav-icon">\uD83D\uDCC8</span>\u7D2F\u8BA1\u7EDF\u8BA1</div>';
   h += '</div>';
-  h += '<div class="sidebar-footer">APIs \u7BA1\u7406\u540E\u53F0</div>';
+  h += '<div class="sidebar-footer">LLM-APIs \u7BA1\u7406\u540E\u53F0</div>';
   h += '</aside>';
 
   // ---- Main wrapper ----
@@ -3714,7 +3714,7 @@ const server = http.createServer(async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`APIs 本地运行: http://localhost:${PORT}`);
+  console.log(`LLM-APIs 本地运行: http://localhost:${PORT}`);
   console.log(`管理后台: http://localhost:${PORT}/admin`);
   console.log(`更新代码后关闭窗口再点桌面 opencode.bat 重启`);
 });
